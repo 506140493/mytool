@@ -232,16 +232,16 @@ function generateRandomNumbers() {
 }
 
 function copyRandomResults() {
-    const toast = document.getElementById('toast');
+    const toast_random = document.getElementById('toast_random');
     const resultDiv = document.getElementById('randomResult');
     const resultText = resultDiv.innerText;
 
     // 定义一个统一的显示函数，1.5秒后自动隐藏
     const showToast = (msg) => {
-        toast.innerText = msg;
-        toast.style.display = 'block';
+        toast_random.innerText = msg;
+        toast_random.style.display = 'block';
         setTimeout(() => {
-            toast.style.display = 'none';
+            toast_random.style.display = 'none';
         }, 1500);
     };
 
