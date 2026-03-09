@@ -176,18 +176,20 @@ function renderJieQi() {
     container.innerHTML = table + "</table>";
 }
 
-// 统一复制函数
+// 统一复制函数 (用于干支历、全天扫描等按钮)
 function doCopy(text) {
+    if (!text) return;
     navigator.clipboard.writeText(text).then(() => {
-        const toast = document.getElementById('toast');
-        toast.style.display = 'block';
-        setTimeout(() => toast.style.display = 'none', 1500);
+        msgToast("复制成功！");
+    }).catch(err => {
+        alert("复制失败，请手动选择复制");
     });
 }
 
 // 存储最后一次生成的随机数，方便复制
 let currentRandomResult = "";
 
+// 生成随机数的核心逻辑
 function generateRandomNumbers() {
     const count = parseInt(document.getElementById('countNum').value);
     const min = parseInt(document.getElementById('minNum').value);
@@ -231,33 +233,81 @@ function generateRandomNumbers() {
     resultDiv.innerText = currentRandomResult;
 }
 
+// 统一的轻量级提示函数 (Toast) @param {string} msg 提示内容
+function msgToast(msg) {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    
+    toast.innerText = msg;
+    toast.style.display = 'block';
+    
+    // 清除之前的定时器，防止连续点击导致闪烁
+    if (window.toastTimer) clearTimeout(window.toastTimer);
+    
+    window.toastTimer = setTimeout(() => {
+        toast.style.display = 'none';
+    }, 1500);
+}
+
+// 复制随机数结果的函数
 function copyRandomResults() {
-    const toast_random = document.getElementById('toast_random');
     const resultDiv = document.getElementById('randomResult');
     const resultText = resultDiv.innerText;
 
-    // 定义一个统一的显示函数，1.5秒后自动隐藏
-    const showToast = (msg) => {
-        toast_random.innerText = msg;
-        toast_random.style.display = 'block';
-        setTimeout(() => {
-            toast_random.style.display = 'none';
-        }, 1500);
-    };
-
-    // 1. 业务逻辑拦截：识别是否是初始状态
+    // 逻辑拦截：识别是否是初始状态
     if (resultText === "等待生成..." || resultText === "" || !currentRandomResult) {
-        showToast("请先生成随机数！"); // 仅提示，无需点击
+        msgToast("请先生成随机数！"); 
         return;
     }
 
-    // 2. 执行复制逻辑
     navigator.clipboard.writeText(currentRandomResult).then(() => {
-        showToast("复制成功！"); // 成功提示
+        msgToast("复制成功！");
     }).catch(err => {
-        showToast("复制失败！"); // 失败提示，同样无需点击
+        msgToast("复制失败！");
         console.error("复制出错:", err);
     });
+}
+
+// 获取实盘信息并复制
+function fetchAndCopyStock() {
+    let code = document.getElementById('stockCode').value.trim();
+    if (!code) {
+        msgToast("请输入股票代码");
+        return;
+    }
+
+    // 自动补全前缀逻辑
+    if (!/^(sh|sz)/i.test(code)) {
+        if (code.startsWith('6')) code = 'sh' + code;
+        else if (code.startsWith('0') || code.startsWith('3')) code = 'sz' + code;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://qt.gtimg.cn/q=${code}`;
+    
+    script.onload = function() {
+        const rawData = window['v_' + code];
+        if (!rawData) {
+            msgToast("未获取到数据");
+            return;
+        }
+        const d = rawData.split('~');
+        const info = `【实盘快报】${d[1]}(${d[2]})\t昨日收盘价:${d[4]}\t当前价格(最新成交价): ${d[3]}\t今日开盘价:${d[5]}\t当前价:${d[3]}\t涨跌幅:${d[32]}%\t换手率:${d[38]}%\t成交额(万元):${d[36]}\t今日最高价:${d[33]}\t今日最低价:${d[34]}\t`;
+
+        navigator.clipboard.writeText(info).then(() => {
+            msgToast("实盘信息已复制！");
+        }).catch(() => {
+            alert("复制失败，数据为：\n" + info);
+        });
+        document.body.removeChild(script);
+    };
+
+    script.onerror = function() {
+        msgToast("接口请求失败");
+        if (script.parentNode) document.body.removeChild(script);
+    };
+
+    document.body.appendChild(script);
 }
 
 // 页面加载初始化

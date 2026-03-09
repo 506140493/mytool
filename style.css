@@ -1,0 +1,122 @@
+/* 基础重置 */
+body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+    background: #f0f2f5; 
+    padding: 20px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    color: #333;
+}
+
+/* 统一卡片设计 */
+.card { 
+    background: white; 
+    border-radius: 12px; 
+    padding: 20px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
+    width: 100%; 
+    max-width: 600px; 
+    margin-bottom: 20px; 
+    box-sizing: border-box;
+}
+
+.card h3, .card-title {
+    color: #666;
+    font-size: 1rem;
+    margin-bottom: 15px;
+    text-align: left;
+    border-left: 4px solid #1a73e8;
+    padding-left: 10px;
+    font-weight: bold;
+}
+
+/* 输入框组合 */
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.input-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 4px 12px;
+}
+
+.input-item label {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.input-item input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 10px;
+    font-size: 16px;
+    color: #333;
+    outline: none;
+    text-align: right;
+}
+
+/* 干支显示区域 */
+.display-box { text-align: center; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+#gzText { font-size: 1.5rem; font-weight: bold; color: #1a73e8; margin: 15px 0; }
+
+/* 按钮样式 */
+.btn-row { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+.grid-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+
+button { 
+    padding: 12px; 
+    border: none; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    background: #1a73e8; 
+    color: white; 
+    font-weight: bold; 
+    transition: opacity 0.2s;
+}
+
+button:active { opacity: 0.8; transform: scale(0.98); }
+.btn-refresh { background: #34a853; }
+.btn-logic { background: #8e44ad; }
+.btn-primary { background: linear-gradient(135deg, #007AFF 0%, #0055FF 100%); box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2); }
+
+/* 结果展示区 */
+.result-display {
+    margin: 15px 0;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    min-height: 40px;
+    color: #2980b9;
+    font-weight: bold;
+    word-break: break-all;
+    border: 1px dashed #ccc;
+    text-align: center;
+}
+
+/* 表格样式 */
+table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+
+/* Toast 提示 */
+#toast,#toast_random {
+    display: none;
+    position: fixed;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 24px;
+    border-radius: 24px;
+    font-size: 14px;
+    z-index: 10000;
+}
