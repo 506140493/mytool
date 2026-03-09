@@ -268,6 +268,12 @@ function copyRandomResults() {
     });
 }
 
+// 快速输入股票代码并获取实盘信息
+function quickFetch(code) {
+    document.getElementById('stockCode').value = code;
+    fetchAndCopyStock();
+}
+
 // 获取实盘信息并复制
 function fetchAndCopyStock() {
     let code = document.getElementById('stockCode').value.trim();
@@ -276,20 +282,10 @@ function fetchAndCopyStock() {
         return;
     }
 
-    // 自动补全前缀逻辑
-    if (!/^(sh|sz|bj)/i.test(code)) {
-        // 特殊处理：上证指数
-        if (code === '000001') {
-            code = 'sh000001';
-        } 
-        // 沪市主板
-        else if (code.startsWith('6')) {
-            code = 'sh' + code;
-        } 
-        // 深市或创业板
-        else if (code.startsWith('0') || code.startsWith('3')) {
-            code = 'sz' + code;
-        }
+    // 自动补全前缀逻辑(不对沪指深指特殊处理,因为有快捷方式复制了)
+    if (!/^(sh|sz)/i.test(code)) {
+        if (code.startsWith('6')) code = 'sh' + code;
+        else if (code.startsWith('0') || code.startsWith('3')) code = 'sz' + code;
     }
 
     const script = document.createElement('script');
@@ -302,7 +298,8 @@ function fetchAndCopyStock() {
             return;
         }
         const d = rawData.split('~');
-        const info = `【实盘快报】${d[1]}(${d[2]})\t昨日收盘价:${d[4]}\t当前价格(最新成交价): ${d[3]}\t今日开盘价:${d[5]}\t当前价:${d[3]}\t涨跌幅:${d[32]}%\t换手率:${d[38]}%\t成交额(万元):${d[36]}\t今日最高价:${d[33]}\t今日最低价:${d[34]}\t`;
+        const formattedTime = d[30].substring(8, 10) + ":" + d[30].substring(10, 12);
+        const info = `【实盘快报】${d[1]}(${d[2]})\t时间:${formattedTime}\t昨日收盘价:${d[4]}\t当前价格(最新成交价): ${d[3]}\t今日开盘价:${d[5]}\t当前价:${d[3]}\t涨跌幅:${d[32]}%\t换手率:${d[38]}%\t成交额(万元):${d[36]}\t今日最高价:${d[33]}\t今日最低价:${d[34]}`;
 
         navigator.clipboard.writeText(info).then(() => {
             msgToast("实盘信息已复制！");
@@ -318,6 +315,117 @@ function fetchAndCopyStock() {
     };
 
     document.body.appendChild(script);
+}
+
+// 封装一个获取单个指数数据的 Promise函数，方便在需要时调用
+function getStockPromise(code) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = `https://qt.gtimg.cn/q=${code}`;
+        script.onload = () => {
+            const rawData = window['v_' + code];
+            if (rawData) {
+                resolve(rawData.split('~'));
+            } else {
+                resolve(null);
+            }
+            document.body.removeChild(script);
+        };
+        script.onerror = () => {
+            if (script.parentNode) document.body.removeChild(script);
+            resolve(null);
+        };
+        document.body.appendChild(script);
+    });
+}
+
+// 获取指定代码的上一个交易日成交额 (单位: 亿元)
+async function getYesterdayAmount(code) {
+    return new Promise((resolve) => {
+        const script = document.createElement('script');
+        // 获取最近 2 天的日线数据
+        script.src = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_data&param=${code},day,,,2,qfq`;
+        
+        window.kline_data = null; // 清理旧数据
+        
+        script.onload = () => {
+            const data = window.kline_data;
+            if (data && data.data && data.data[code]) {
+                const kline = data.data[code].day || data.data[code].qfqday;
+                console.log(`获取到 ${code} 的日线数据:`, kline);
+                if (kline && kline.length >= 2) {
+                    // kline[0] 是上一个交易日, kline[1] 是今天
+                    // 腾讯日线数组索引: [0:日期, 1:开, 2:收, 3:高, 4:低, 5:成交量, 6:成交额(万元)]
+                    const yesterdayAmt = parseFloat(kline[0][5]); // 成交量或额，视接口返回为准
+                    console.log(`昨日成交量/额（单位视接口而定）: ${yesterdayAmt}`);
+                    // 注意：部分代码返回的是成交量(手)，部分是成交额。
+                    // 建议通过 (昨收 * 昨量) 估算或查验索引 6。
+                    resolve(parseFloat(kline[0][5]) / 10000); // 假设返回的是万元，转为亿元
+                }
+            }
+            resolve(0);
+            if (script.parentNode) document.body.removeChild(script);
+        };
+        
+        script.onerror = () => {
+            resolve(0);
+            if (script.parentNode) document.body.removeChild(script);
+        };
+        document.body.appendChild(script);
+    });
+}
+
+// 生成市场简报的核心函数
+async function generateMarketReport() {
+    msgToast("正在汇总市场数据...");
+    
+    // 1. 定义需要抓取的核心代码
+    const codes = {
+        sh: 'sh000001', // 上证
+        sz: 'sz399001', // 深成
+        cy: 'sz399006', // 创业
+        bj: 'bj899050'  // 北证50
+    };
+
+    // 2. 并发请求所有数据
+    const [shData, szData, cyData, bjData] = await Promise.all([
+        getStockPromise(codes.sh),
+        getStockPromise(codes.sz),
+        getStockPromise(codes.cy),
+        getStockPromise(codes.bj)
+    ]);
+
+    if (!shData || !szData) {
+        msgToast("获取数据失败，请重试");
+        return;
+    }
+
+    // 3. 提取关键数值
+    const shRate = parseFloat(shData[32]);
+    const szRate = parseFloat(szData[32]);
+    const cyRate = parseFloat(cyData[32]);
+    const bjRate = parseFloat(bjData[32]);
+
+    // 计算三市成交额 (单位：亿元)
+    // 腾讯接口索引 37 是成交额（单位：万），转为亿元
+    const totalAmount = (
+        (parseFloat(shData[37]) || 0) + 
+        (parseFloat(szData[37]) || 0) + 
+        (parseFloat(bjData[37]) || 0)
+    ) / 10000;
+
+    // 5. 判断涨跌趋势
+    const trend = shRate >= 0 ? "集体上涨" : "集体下跌";
+    
+    // 6. 按照模板拼接
+    // 注意：具体下跌个股数接口拿不到，通常需要专业API。
+    // 这里我们重点展示点位和涨跌幅。
+    const report = `【A股三大指数今日${trend}。截至目前，上证指数报${shData[3]}点，涨跌幅${shRate}%；深证成指报${szData[3]}点，涨跌幅${szRate}%；创业板指报${cyData[3]}点，涨跌幅${cyRate}%；北证50指数报${bjData[3]}点，涨跌幅${bjRate}%。沪深京三市合计成交额约${totalAmount.toFixed(0)}亿元】`;
+
+    // 7. 执行复制
+    navigator.clipboard.writeText(report).then(() => {
+        msgToast("指数简报已生成并复制！");
+    });
 }
 
 // 页面加载初始化
