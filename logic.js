@@ -277,9 +277,19 @@ function fetchAndCopyStock() {
     }
 
     // 自动补全前缀逻辑
-    if (!/^(sh|sz)/i.test(code)) {
-        if (code.startsWith('6')) code = 'sh' + code;
-        else if (code.startsWith('0') || code.startsWith('3')) code = 'sz' + code;
+    if (!/^(sh|sz|bj)/i.test(code)) {
+        // 特殊处理：上证指数
+        if (code === '000001') {
+            code = 'sh000001';
+        } 
+        // 沪市主板
+        else if (code.startsWith('6')) {
+            code = 'sh' + code;
+        } 
+        // 深市或创业板
+        else if (code.startsWith('0') || code.startsWith('3')) {
+            code = 'sz' + code;
+        }
     }
 
     const script = document.createElement('script');
