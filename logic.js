@@ -299,7 +299,7 @@ function fetchAndCopyStock() {
         }
         const d = rawData.split('~');
         const formattedTime = d[30].substring(8, 10) + ":" + d[30].substring(10, 12);
-        const info = `【实盘快报】${d[1]}(${d[2]})\t时间:${formattedTime}\t昨日收盘价:${d[4]}\t当前价格(最新成交价): ${d[3]}\t今日开盘价:${d[5]}\t当前价:${d[3]}\t涨跌幅:${d[32]}%\t换手率:${d[38]}%\t成交额(万元):${d[37]}\t今日最高价:${d[33]}\t今日最低价:${d[34]}`;
+        const info = `【实盘快报】${d[1]}(${d[2]})\t时间:${formattedTime}\t昨日收盘价:${d[4]}\t当前价格(最新成交价): ${d[3]}\t今日开盘价:${d[5]}\t当前价:${d[3]}\t涨跌幅:${d[32]}%\t换手率:${d[38]}%\t成交额(万元):${d[37]}\t今日最高价:${d[33]}\t今日最低价:${d[34]}。`;
 
         navigator.clipboard.writeText(info).then(() => {
             msgToast("实盘信息已复制！");
